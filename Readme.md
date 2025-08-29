@@ -37,6 +37,7 @@ Yo recomiendo que unicamente dejes ChromaDB como se encuentra y utilices Mongo u
 ### Agentes de IA
 Los agentes se dividen en dos que trabajan de forma estable, los que son para Mongo y los que son para SQL, ambos requieren de variables de entorno configurables en el compose.
 **mongo_agent**:
+
       - MONGO_URI=mongodb://mongodb:27017/ (Que es la conexion al contenedor de mongo)
       - DB_NAME=covid_db    (El nombre de la base de datos donde se almacenan)
       - CHROMA_COLLECTION=casos_covid   (El nombre de la coleccion dentro de ChromaDB)
@@ -54,6 +55,7 @@ Los agentes se dividen en dos que trabajan de forma estable, los que son para Mo
       - BASE_URL_API_KEY=http://ollama:11434
 
 **sql_agent**:
+
       - SQL_URI=mysql+pymysql://mi_usuario@mysql:3306/mi_base (Que es la conexion al contenedor de MySql)
       - CHROMA_COLLECTION=Inventario_de_emisiones   (El nombre de la coleccion dentro de ChromaDB)
 
