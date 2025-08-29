@@ -1,0 +1,9 @@
+llama-index
+pymongo
+chromadb
+tqdm
+uvicorn
+fastapi
+requests
+llama-index-vector-stores-chroma 
+llama-index-readers-web

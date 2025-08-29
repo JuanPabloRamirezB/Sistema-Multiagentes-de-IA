@@ -1,0 +1,213 @@
+version: '3.8'
+
+volumes:
+  ollama:
+    external: true
+  mongo-data:
+    external: true
+  mysql_data: 
+    external: true
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb_Conatiner
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - agent_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: chromadb_Conatiner
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./chroma_data:/chroma/data
+    networks:
+      - agent_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_Container
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_DATABASE=mi_base
+      - MYSQL_USER=mi_usuario
+      - MYSQL_PASSWORD=mi_contraseña
+      - MYSQL_ROOT_PASSWORD=tu_contraseña_segura
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - agent_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ollama:
+    build:
+      context: .
+      dockerfile: Dockerfile.ollama
+    container_name: ollama_container
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    networks:
+      - agent_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  mongo_agent:
+    build:
+      context: agents/generic/mongo_agent/.
+      dockerfile: Dockerfile
+    container_name: mongo_agent_container
+    restart: always
+    ports:
+      - "8002:8002"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/
+      - DB_NAME=covid_db
+      - CHROMA_COLLECTION=casos_covid
+      - LLM_CHOICE=cohere
+      - MODEL=command-r
+      - BASE_URL_API_KEY=djpip5AznRIul3xtChGzwq92kRuNHlf9lLjctBQB
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      # chromadb:
+      #   condition: service_healthy
+      mysql:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    networks:
+      - agent_network
+    volumes:
+      - ./agents/generic:/app/agents/generic
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8002"]
+
+  sql_agent:
+    build:
+      context: agents/generic/sql_agent/.
+      dockerfile: Dockerfile
+    container_name: sql_agent_container
+    restart: always
+    ports:
+      - "8003:8003"
+    environment:
+      - SQL_URI=mysql+pymysql://mi_usuario@mysql:3306/mi_base
+      - CHROMA_COLLECTION=Inventario_de_emisiones
+      - LLM_CHOICE=cohere
+      - MODEL=command-r
+      - BASE_URL_API_KEY=djpip5AznRIul3xtChGzwq92kRuNHlf9lLjctBQB
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      # chromadb:
+      #   condition: service_healthy
+      ollama:
+        condition: service_healthy
+    networks:
+      - agent_network
+    volumes:
+      - ./agents/generic:/app/agents/generic
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003"]
+
+  api_externa_agent:
+    build:
+      context: agents/apiexterna/.
+      dockerfile: Dockerfile
+    container_name: api_externa_container
+    restart: always
+    ports:
+      - "8004:8004"
+    environment:
+      - LLM_CHOICE=cohere
+      - MODEL=command-r
+      - BASE_URL_API_KEY=tEoaKGsnrDb7iS4HKF1v1dHAhPfYBXRSpzgEg8K2
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      # chromadb:
+      #   condition: service_healthy
+      ollama:
+        condition: service_healthy
+    networks:
+      - agent_network
+    volumes:
+      - ./agents/apiexterna:/app/agents/apiexterna
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8004"]
+
+  meta_agent:
+    build: 
+      context: .
+      dockerfile: dockerfile
+    container_name: meta_agent
+    environment:
+      - LLM_CHOICE=cohere
+      - MODEL=command-r
+      - BASE_URL_API_KEY=tEoaKGsnrDb7iS4HKF1v1dHAhPfYBXRSpzgEg8K2
+    ports:
+      - "8001:8001"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      # chromadb:
+      #   condition: service_healthy
+      ollama:
+        condition: service_healthy
+    networks:
+      - agent_network
+    volumes:
+      - ./:/app/meta_agent
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]  
+
+networks:
+  agent_network:
+    driver: bridge
+
+# agents:
+#   - name: sql_agent
+#     type: sql
+#     sql_uri: "mysql+pymysql://mi_usuario@mysql:3306/mi_base"
+#     chroma_collection: "Inventario_de_emisiones"
+#     llm:
+#       choice: cohere
+#       params:
+#         model: "command-r"
+#         base_url_api_key: "djpip5AznRIul3xtChGzwq92kRuNHlf9lLjctBQB"
+
+#   - name: mongo_agent
+#     type: mongo
+#     sql_uri: "mongodb://mongodb:27017/"
+#     db_name: "covid_db"
+#     chroma_collection: "casos_covid"
+#     llm:
+#       choice: cohere
+#       params:
+#         model: "command-r"
+#         base_url_api_key: "djpip5AznRIul3xtChGzwq92kRuNHlf9lLjctBQB"

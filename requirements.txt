@@ -1,0 +1,10 @@
+llama-index==0.12.49
+llama-index-core
+llama-index-llms-cohere
+llama-index-llms-ollama
+llama-index-embeddings-huggingface
+llama-index-vector-stores-chroma 
+cohere
+chromadb>=0.4.24
+pymongo
+fastapi
