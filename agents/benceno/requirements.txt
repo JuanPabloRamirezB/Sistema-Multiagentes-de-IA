@@ -1,0 +1,7 @@
+llama-index
+pymongo
+chromadb
+tqdm
+uvicorn
+fastapi
+requests

@@ -1,0 +1,9 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY agent_api_externa.py agent_api_externa.py
+COPY main.py main.py
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt && rm -rf /tmp/*

@@ -1,0 +1,21 @@
+# llama-index==0.12.49
+# pymongo
+# chromadb
+# tqdm
+# uvicorn
+# fastapi
+# requests
+# llama-index-vector-stores-chroma 
+# llama-index-readers-web
+# llama-index-embeddings-huggingface
+fastapi
+uvicorn
+pymongo
+llama-index
+llama-index-core
+llama-index-llms-ollama
+llama-index-llms-cohere
+llama-index-agent-openai
+llama-index-embeddings-huggingface
+llama-index-vector-stores-chroma
+chromadb
